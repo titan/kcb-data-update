@@ -1,0 +1,35 @@
+@startuml
+skinparam {
+    defaultFontName FZYaSong-B-GBK
+    defaultFontSize 18
+}
+
+start
+
+:联网检查数据更新;
+
+if (200?) then (yes)
+  if (本地有數據包?) then (yes)
+    :檢查本地 checksum;
+    if (checksum 相等) then (yes)
+    else (no)
+      if (獲得差分包) then (yes)
+        :應用差分包;
+        :檢查 checksum;
+        if (checksum 相等) then (yes)
+        else (no)
+          :下載完整數據包;
+        endif
+      else (no)
+        :下載完整數據包;
+      endif
+      :解開數據;
+    endif
+  else (no)
+    :下載完整數據包;
+    :解開數據;
+  endif
+else (no)
+endif
+stop
+@enduml
