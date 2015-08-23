@@ -26,10 +26,12 @@ def main(src, rep, gen):
     else:
         genpath.mkdir(parents=True)
     count = 0
-    for x in sorted(reppath.iterdir(), key=lambda x: x.stat().st_mtime):
+    files = sorted(reppath.iterdir(), key=lambda x: x.stat().st_mtime)
+    files.reverse()
+    for x in files:
         if x.is_file():
-            if count > 5:
-                print('No need to build diff for old data package' + x.name)
+            if count > 4:
+                print('No need to build diff for old data package ' + x.name)
                 continue
             xmd5 = md5(x)
             if srcmd5 != xmd5:
