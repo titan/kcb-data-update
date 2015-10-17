@@ -3,11 +3,13 @@
 
 import argparse
 import base64
+import gzip
 import hashlib
 import hmac
-import time
-import httplib2
+import os
 import subprocess
+import tempfile
+import time
 from pathlib import Path
 
 def md5(s):
@@ -19,17 +21,30 @@ def md5(s):
 def sign(appkey, src):
     return base64.b64encode(hmac.new(appkey.encode('ascii'), src.encode('ascii'), digestmod=hashlib.sha1).digest()).decode('ascii')
 
+def is_gzip(s):
+    with s.open('rb') as f:
+        header = f.read(2)
+        if header[0] == 0x1f and header[1] == 0x8b:
+            return True
+        else:
+            return False
+
 def main(appid, appkey, host, src, root, desc):
-    srcmd5 = md5(Path(src))
+    srcpath = Path(src)
+    if is_gzip(srcpath):
+        with gzip.open(str(srcpath), 'rb') as fin:
+            fout = tempfile.NamedTemporaryFile(dir='/tmp', delete=False)
+            srcpath = Path(fout.name)
+            fout.write(fin.read())
+            fout.close()
+            srcmd5 = md5(srcpath)
+            os.unlink(fout.name)
+    else:
+        srcmd5 = md5(srcpath)
     gmt = time.strftime('%a, %d %b %Y %H:%M:%S GMT')
-    req = httplib2.Http(disable_ssl_certificate_validation=True)
     data = ('{"checksum":"%s","root":"%s","description":"%s"}' % (srcmd5, root, desc)).encode('utf-8')
     headers = {'Content-Type': 'application/json', 'Authorization': 'KCB %s:%s' % (appid, sign(appkey, 'POST\n\n\n%s\n/data' % (gmt))), 'Date': gmt}
     subprocess.call(['curl', '-k', '-v', 'https://%s/data' % host, '--data', data, '-H', 'Content-Type: application/json', '-H', 'Authorization: KCB %s:%s' % (appid, sign(appkey, 'POST\n\n\n%s\n/data' % (gmt))), '-H', 'Date: %s' % gmt])
-    #resp, content = req.request('https://%s/data' % host, 'POST', data, headers)
-    #print(resp)
-    #for h, v in resp.getheaders():
-    #    print('%s: %s' % (h, v))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = 'A tool to register data package')
