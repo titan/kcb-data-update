@@ -45,7 +45,9 @@ def main(src, access, secret, bucket):
         if is_gzip(srcpath):
             be_gzip = True
             with open(src, 'rb') as f:
-                name = md5sum(gzip.decompress(f.read())) + srcpath.suffix
+                path = str(srcpath)
+                suffix = path[path.find('.'):]
+                name = md5sum(gzip.decompress(f.read())) + suffix
         else:
             be_gzip = False
             name = md5(srcpath) + srcpath.suffix + '.gz'
