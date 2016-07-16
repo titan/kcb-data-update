@@ -31,10 +31,11 @@ def upload(token, src, name, to_gzip, be_gzip):
     with src.open('rb') as f:
         if to_gzip and not be_gzip:
             content = gzip.compress(f.read(), compresslevel = 9)
+            ret, info = qiniu.put_data(token, name, content, mime_type="application/octet-stream", check_crc=True)
+            if ret is None:
+                print(info)
         else:
-            content = f.read()
-        ret, info = qiniu.put_data(token, name, content)
-        if ret is None:
+            ret, info = qiniu.put_file(token, name, str(src), mime_type="application/octet-stream", check_crc=True)
             print(info)
 
 def main(src, access, secret, bucket):
